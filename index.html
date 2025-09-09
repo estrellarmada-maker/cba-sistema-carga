@@ -1,1029 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de la Carga CBA - Estrella Armada PhD</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .card { @apply bg-white rounded-lg border shadow-sm; }
-        .card-header { @apply px-6 py-4 border-b; }
-        .card-content { @apply p-6; }
-        .card-title { @apply text-lg font-semibold; }
-        .button { @apply px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors; }
-        .button-outline { @apply px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors; }
-        .badge { @apply px-2 py-1 text-xs font-medium rounded; }
-        .input { @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500; }
-        .textarea { @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gestión de la Carga CBA – Formulario</title>
+  <meta name="description" content="Formulario CBA para registrar Wellness y RPE">
+  <style>
+    :root{--bg:#f6f7fb;--panel:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--blue:#2563eb;--blue2:#1d4ed8}
+    *{box-sizing:border-box} html,body{margin:0}
+    body{font:14px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text)}
+    .wrap{max-width:920px;margin:32px auto;padding:0 16px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06);padding:20px;margin-bottom:16px}
+    h1{margin:0 0 6px;font-size:24px} h2{margin:8px 0 12px;font-size:18px}
+    .muted{color:var(--muted)}
+    label{display:block;font-weight:600;margin:14px 0 6px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff}
+    textarea{min-height:90px;resize:vertical}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1 1 240px}
+    .actions{margin-top:16px;display:flex;gap:12px}
+    button{padding:10px 14px;border:none;border-radius:8px;background:var(--blue);color:#fff;cursor:pointer}
+    button:hover{background:var(--blue2)} button[disabled]{opacity:.6;cursor:not-allowed}
+    .hp{position:absolute !important;left:-9999px !important;opacity:0 !important}
+    .help{font-size:12px;color:var(--muted)}
+    .box{padding:12px;border:1px dashed var(--border);border-radius:8px;background:#fafafa}
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+  <div class="wrap">
+    <div class="card">
+      <h1>Gestión de la Carga CBA</h1>
+      <p class="muted">Rellena uno o ambos formularios. Al enviar, los datos se guardan en nuestra hoja privada.</p>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+      <!-- Controles comunes -->
+      <div class="row">
+        <div class="col">
+          <label>Equipo</label>
+          <select id="equipo" required>
+            <option value="">Selecciona…</option>
+            <option value="3FEB" data-cat="M">3FEB (Masculino)</option>
+            <option value="Nacional" data-cat="F">Nacional (Femenino)</option>
+            <option value="Junior A" data-cat="F">Junior A (Femenino)</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Jugador/a</label>
+          <select id="jugador" required>
+            <option value="">Primero elige equipo…</option>
+          </select>
+          <p class="help">La lista se rellena automáticamente según el equipo.</p>
+        </div>
+        <div class="col">
+          <label>Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
+      </div>
+    </div>
 
-        // Storage utilities
-        const StorageManager = {
-            save: (key, data) => {
-                try {
-                    localStorage.setItem(key, JSON.stringify(data));
-                } catch (error) {
-                    console.error('Error saving to localStorage:', error);
-                }
-            },
-            load: (key, defaultValue = null) => {
-                try {
-                    const stored = localStorage.getItem(key);
-                    return stored ? JSON.parse(stored) : defaultValue;
-                } catch (error) {
-                    console.error('Error loading from localStorage:', error);
-                    return defaultValue;
-                }
-            },
-            remove: (key) => {
-                try {
-                    localStorage.removeItem(key);
-                } catch (error) {
-                    console.error('Error removing from localStorage:', error);
-                }
-            }
-        };
+    <!-- Wellness -->
+    <div class="card">
+      <h2>Cuestionario Wellness</h2>
+      <form action="https://script.google.com/macros/s/AKfycbzBqimHVtemQ9aNdzRaVytOnfbjLg86REwr0AJBIyBG_8poIV94xvGxyW9kFloGGD4S/exec" method="POST" id="form-wellness">
+        <input class="hp" type="text" name="_hp" autocomplete="off">
 
-        const teams = [
-            { id: '1', name: '3FEB', category: 'Masculino', color: '#3b82f6' },
-            { id: '2', name: 'Nacional', category: 'Femenino', color: '#ec4899' },
-            { id: '3', name: 'Junior A', category: 'Femenino', color: '#10b981' }
-        ];
+        <!-- campos “comunes” que se sincronizan desde los selects de arriba -->
+        <input type="hidden" name="equipo" id="w_equipo">
+        <input type="hidden" name="nombre" id="w_nombre">
+        <input type="hidden" name="fecha" id="w_fecha">
+        <input type="hidden" name="tipo" value="wellness">
 
-        const players = {
-            '3FEB': ['Antonio Marín', 'Adrián Barbeito', 'Iker Mateo', 'Jaime Santolaria', 'Sergio Gutiérrez', 'Ruben Terrats', 'Guillermo Campos', 'Alex Fortes', 'Alejandro Relaño', 'Jorge Oliva', 'Pablo Ballespín'],
-            'Nacional': ['Aitana Jerez', 'Irene Fernandez', 'Lucía Arnáez', 'Andrea Rodriguez', 'Nicole Murugarren', 'Sofía Barrena', 'Cristina Sánchez', 'Iara Bravo'],
-            'Junior A': ['Irene Fernandez', 'Adriana Reyes', 'Jimena Cachón', 'Carla Solano', 'Julia Izquierdo', 'Alba Masedo', 'Carla Sánchez', 'Ainara Testillano', 'Edurne Diaz', 'Paola Ramírez', 'Natalia Allen']
-        };
+        <div class="row">
+          <div class="col">
+            <label>Calidad del sueño (1–5)</label>
+            <input type="number" name="sleep" min="1" max="5" required>
+          </div>
+          <div class="col">
+            <label>Fatiga general (1–5)</label>
+            <input type="number" name="fatigue" min="1" max="5" required>
+          </div>
+          <div class="col">
+            <label>Nivel de estrés (1–5)</label>
+            <input type="number" name="stress" min="1" max="5" required>
+          </div>
+          <div class="col">
+            <label>Estado de ánimo (1–5)</label>
+            <input type="number" name="mood" min="1" max="5" required>
+          </div>
+          <div class="col">
+            <label>Dolor muscular (1–5)</label>
+            <input type="number" name="doms" min="1" max="5" required>
+          </div>
+        </div>
 
-        const defaultChartData = [
-            { date: '20/01', rpe: 72, wellness: 85, maxPercentage: 72 },
-            { date: '21/01', rpe: 68, wellness: 82, maxPercentage: 68 },
-            { date: '22/01', rpe: 81, wellness: 78, maxPercentage: 81 },
-            { date: '23/01', rpe: 75, wellness: 75, maxPercentage: 75 },
-            { date: '24/01', rpe: 69, wellness: 73, maxPercentage: 69 },
-            { date: '25/01', rpe: 85, wellness: 70, maxPercentage: 85 }
-        ];
+        <div id="menstrual-box" class="box" style="display:none; margin-top:12px">
+          <label>Fase del ciclo menstrual</label>
+          <select name="menstrual">
+            <option value="">— No aplica / Prefiero no decir —</option>
+            <option value="menstruacion">Menstruación (1–5)</option>
+            <option value="folicular_tardia">Folicular tardía (6–14)</option>
+            <option value="lutea_temprana">Lútea temprana (15–21)</option>
+            <option value="lutea_tardia">Lútea tardía (22–28)</option>
+          </select>
+          <p class="help">Solo visible en equipos femeninos.</p>
+        </div>
 
-        const defaultPlayerStats = [
-            // 3FEB (Masculino)
-            { name: 'Antonio Marín', wellness: 6.2, rpe: 8.5, acwr: 1.4, status: 'red', comment: 'Cansado', menstrual: null },
-            { name: 'Adrián Barbeito', wellness: 8.1, rpe: 7.2, acwr: 1.1, status: 'green', comment: '', menstrual: null },
-            { name: 'Iker Mateo', wellness: 7.5, rpe: 6.8, acwr: 0.9, status: 'green', comment: 'Me encuentro bien', menstrual: null },
-            { name: 'Jaime Santolaria', wellness: 7.8, rpe: 7.5, acwr: 1.2, status: 'green', comment: '', menstrual: null },
-            { name: 'Sergio Gutiérrez', wellness: 6.8, rpe: 8.1, acwr: 1.3, status: 'amber', comment: 'Algo de molestia en la rodilla', menstrual: null },
-            { name: 'Ruben Terrats', wellness: 8.0, rpe: 6.9, acwr: 1.0, status: 'green', comment: '', menstrual: null },
-            { name: 'Guillermo Campos', wellness: 7.2, rpe: 7.8, acwr: 1.1, status: 'green', comment: 'Todo correcto', menstrual: null },
-            { name: 'Alex Fortes', wellness: 6.5, rpe: 8.3, acwr: 1.4, status: 'amber', comment: 'Dormí poco anoche', menstrual: null },
-            { name: 'Alejandro Relaño', wellness: 8.2, rpe: 6.7, acwr: 0.8, status: 'green', comment: '', menstrual: null },
-            { name: 'Jorge Oliva', wellness: 7.6, rpe: 7.4, acwr: 1.2, status: 'green', comment: 'En buena forma', menstrual: null },
-            { name: 'Pablo Ballespín', wellness: 7.9, rpe: 7.0, acwr: 1.0, status: 'green', comment: '', menstrual: null },
-            
-            // Nacional (Femenino)
-            { name: 'Aitana Jerez', wellness: 7.8, rpe: 7.9, acwr: 1.4, status: 'amber', comment: 'Un poco cansada', menstrual: 'folicular_tardia' },
-            { name: 'Irene Fernandez', wellness: 8.3, rpe: 6.5, acwr: 0.9, status: 'green', comment: 'Muy bien, con energía', menstrual: 'lutea_temprana' },
-            { name: 'Lucía Arnáez', wellness: 7.5, rpe: 7.1, acwr: 1.2, status: 'green', comment: 'Me duele la espalda', menstrual: 'menstruacion' },
-            { name: 'Andrea Rodriguez', wellness: 6.8, rpe: 7.3, acwr: 1.1, status: 'amber', comment: 'Dormí poco', menstrual: 'lutea_tardia' },
-            { name: 'Nicole Murugarren', wellness: 8.1, rpe: 6.8, acwr: 1.0, status: 'green', comment: '', menstrual: 'folicular_tardia' },
-            { name: 'Sofía Barrena', wellness: 7.4, rpe: 7.6, acwr: 1.3, status: 'amber', comment: 'Algo de estrés por exámenes', menstrual: 'lutea_temprana' },
-            { name: 'Cristina Sánchez', wellness: 8.0, rpe: 6.9, acwr: 0.9, status: 'green', comment: 'Perfecto estado', menstrual: 'menstruacion' },
-            { name: 'Iara Bravo', wellness: 7.2, rpe: 7.8, acwr: 1.2, status: 'green', comment: 'Lista para entrenar', menstrual: 'lutea_tardia' },
-            
-            // Junior A (Femenino)
-            { name: 'Adriana Reyes', wellness: 7.6, rpe: 7.2, acwr: 1.1, status: 'green', comment: '', menstrual: 'folicular_tardia' },
-            { name: 'Jimena Cachón', wellness: 6.9, rpe: 8.0, acwr: 1.3, status: 'amber', comment: 'Un poco fatigada', menstrual: 'menstruacion' },
-            { name: 'Carla Solano', wellness: 8.2, rpe: 6.6, acwr: 0.9, status: 'green', comment: 'En plena forma', menstrual: 'lutea_tardia' },
-            { name: 'Julia Izquierdo', wellness: 7.7, rpe: 7.4, acwr: 1.2, status: 'green', comment: '', menstrual: 'folicular_tardia' },
-            { name: 'Alba Masedo', wellness: 7.0, rpe: 7.9, acwr: 1.4, status: 'amber', comment: 'Molestias musculares leves', menstrual: 'lutea_temprana' },
-            { name: 'Carla Sánchez', wellness: 8.4, rpe: 6.4, acwr: 0.8, status: 'green', comment: 'Excelente estado', menstrual: 'menstruacion' },
-            { name: 'Ainara Testillano', wellness: 7.3, rpe: 7.7, acwr: 1.1, status: 'green', comment: 'Todo bien', menstrual: 'lutea_tardia' },
-            { name: 'Edurne Diaz', wellness: 6.7, rpe: 8.2, acwr: 1.3, status: 'amber', comment: 'Algo de cansancio', menstrual: 'folicular_tardia' },
-            { name: 'Paola Ramírez', wellness: 8.0, rpe: 7.0, acwr: 1.0, status: 'green', comment: 'Muy motivada', menstrual: 'lutea_temprana' },
-            { name: 'Natalia Allen', wellness: 7.8, rpe: 6.7, acwr: 0.9, status: 'green', comment: '', menstrual: 'menstruacion' }
-        ];
+        <label>Comentario (opcional)</label>
+        <textarea name="comentario" placeholder="¿Algo más que quieras comentar?"></textarea>
 
-        const menstrualPhases = [
-            { phase: 'menstruacion', label: 'Menstruación', days: '1-5', color: '#dc2626', start: 1, end: 5 },
-            { phase: 'folicular_tardia', label: 'Folicular Tardía', days: '6-14', color: '#059669', start: 6, end: 14 },
-            { phase: 'lutea_temprana', label: 'Lútea Temprana', days: '15-21', color: '#d97706', start: 15, end: 21 },
-            { phase: 'lutea_tardia', label: 'Lútea Tardía', days: '22-28', color: '#7c3aed', start: 22, end: 28 }
-        ];
+        <!-- redirección a página de gracias (opcional) -->
+        <input type="hidden" name="_redirect" value="./gracias.html">
 
-        function CBASystem() {
-            const [userType, setUserType] = useState(null);
-            const [authKey, setAuthKey] = useState('');
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [currentView, setCurrentView] = useState('home');
-            const [selectedTeam, setSelectedTeam] = useState(teams[0]);
-            const [selectedPlayer, setSelectedPlayer] = useState('');
-            const [showDateFilter, setShowDateFilter] = useState(false);
-            const [dateRange, setDateRange] = useState({ start: '', end: '' });
-            const [filteredData, setFilteredData] = useState(defaultChartData);
-            const [showIndividualReport, setShowIndividualReport] = useState(false);
-            const [selectedIndividualPlayer, setSelectedIndividualPlayer] = useState('');
-            const [wellnessForm, setWellnessForm] = useState({ 
-                sleep: 3, fatigue: 3, stress: 3, mood: 3, doms: 3, menstrual: '', comment: '' 
-            });
-            const [rpeForm, setRpeForm] = useState({ rpe: 5, comment: '' });
-            
-            // New state for persistent data
-            const [playerStats, setPlayerStats] = useState(defaultPlayerStats);
-            const [chartData, setChartData] = useState(defaultChartData);
+        <div class="actions">
+          <button type="submit">Enviar Wellness</button>
+          <button type="reset">Borrar</button>
+        </div>
+      </form>
+    </div>
 
-            // Load data on component mount
-            useEffect(() => {
-                const savedPlayerStats = StorageManager.load('cba-player-stats', defaultPlayerStats);
-                const savedChartData = StorageManager.load('cba-chart-data', defaultChartData);
-                
-                setPlayerStats(savedPlayerStats);
-                setChartData(savedChartData);
-                setFilteredData(savedChartData);
-            }, []);
+    <!-- RPE -->
+    <div class="card">
+      <h2>Valoración RPE</h2>
+      <form action="ACTION_URL_AQUI" method="POST" id="form-rpe">
+        <input class="hp" type="text" name="_hp" autocomplete="off">
 
-            // Save data whenever it changes
-            useEffect(() => {
-                StorageManager.save('cba-player-stats', playerStats);
-            }, [playerStats]);
+        <!-- comunes -->
+        <input type="hidden" name="equipo" id="r_equipo">
+        <input type="hidden" name="nombre" id="r_nombre">
+        <input type="hidden" name="fecha" id="r_fecha">
+        <input type="hidden" name="tipo" value="rpe">
 
-            useEffect(() => {
-                StorageManager.save('cba-chart-data', chartData);
-            }, [chartData]);
+        <div class="row">
+          <div class="col">
+            <label>RPE (1–10)</label>
+            <input type="number" name="rpe" min="1" max="10" required>
+          </div>
+          <div class="col">
+            <label>Comentario de la sesión</label>
+            <input type="text" name="comentario_rpe" placeholder="Opcional">
+          </div>
+        </div>
 
-            const handleAuth = () => {
-                if (userType === 'coach') {
-                    if (authKey === 'CBA4') {
-                        setIsAuthenticated(true);
-                        setCurrentView('dashboard');
-                    } else {
-                        alert('Clave incorrecta');
-                    }
-                } else {
-                    setIsAuthenticated(true);
-                    setCurrentView('athlete');
-                }
-            };
+        <input type="hidden" name="_redirect" value="./gracias.html">
 
-            const calculateWellness = (form) => {
-                const avg = [form.sleep, form.fatigue, form.stress, form.mood, form.doms].reduce((a, b) => a + b, 0) / 5;
-                return Math.round(avg * 2 * 10) / 10;
-            };
+        <div class="actions">
+          <button type="submit">Enviar RPE</button>
+          <button type="reset">Borrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-            const saveWellnessData = () => {
-                const wellnessScore = calculateWellness(wellnessForm);
-                const timestamp = new Date().toISOString();
-                
-                // Update player stats
-                const updatedStats = playerStats.map(player => {
-                    if (player.name === selectedPlayer) {
-                        return {
-                            ...player,
-                            wellness: wellnessScore,
-                            comment: wellnessForm.comment,
-                            menstrual: wellnessForm.menstrual || player.menstrual,
-                            lastUpdated: timestamp
-                        };
-                    }
-                    return player;
-                });
-                
-                setPlayerStats(updatedStats);
-                
-                // Save to wellness history
-                const wellnessHistory = StorageManager.load('cba-wellness-history', []);
-                wellnessHistory.push({
-                    player: selectedPlayer,
-                    team: selectedTeam.name,
-                    wellness: wellnessScore,
-                    form: wellnessForm,
-                    timestamp
-                });
-                StorageManager.save('cba-wellness-history', wellnessHistory);
-                
-                alert(`Wellness guardado! Score: ${wellnessScore}/10`);
-                setCurrentView('athlete');
-            };
+  <script>
+    // Datos de jugadores por equipo
+    const roster = {
+      "3FEB": ["Antonio Marín","Adrián Barbeito","Iker Mateo","Jaime Santolaria","Sergio Gutiérrez","Ruben Terrats","Guillermo Campos","Alex Fortes","Alejandro Relaño","Jorge Oliva","Pablo Ballespín"],
+      "Nacional": ["Aitana Jerez","Irene Fernandez","Lucía Arnáez","Andrea Rodriguez","Nicole Murugarren","Sofía Barrena","Cristina Sánchez","Iara Bravo"],
+      "Junior A": ["Irene Fernandez","Adriana Reyes","Jimena Cachón","Carla Solano","Julia Izquierdo","Alba Masedo","Carla Sánchez","Ainara Testillano","Edurne Diaz","Paola Ramírez","Natalia Allen"]
+    };
 
-            const saveRPEData = () => {
-                const timestamp = new Date().toISOString();
-                
-                // Update player stats
-                const updatedStats = playerStats.map(player => {
-                    if (player.name === selectedPlayer) {
-                        return {
-                            ...player,
-                            rpe: rpeForm.rpe,
-                            lastUpdated: timestamp
-                        };
-                    }
-                    return player;
-                });
-                
-                setPlayerStats(updatedStats);
-                
-                // Save to RPE history
-                const rpeHistory = StorageManager.load('cba-rpe-history', []);
-                rpeHistory.push({
-                    player: selectedPlayer,
-                    team: selectedTeam.name,
-                    rpe: rpeForm.rpe,
-                    comment: rpeForm.comment,
-                    timestamp
-                });
-                StorageManager.save('cba-rpe-history', rpeHistory);
-                
-                alert(`RPE registrado: ${rpeForm.rpe}/10`);
-                setCurrentView('athlete');
-            };
+    const selEquipo = document.getElementById('equipo');
+    const selJugador = document.getElementById('jugador');
+    const inpFecha = document.getElementById('fecha');
+    const menBox = document.getElementById('menstrual-box');
 
-            const downloadExcel = () => {
-                const teamPlayers = playerStats.filter(player => players[selectedTeam.name]?.includes(player.name));
-                const data = teamPlayers.map(player => ({
-                    Nombre: player.name,
-                    Wellness: player.wellness,
-                    RPE: player.rpe,
-                    ACWR: player.acwr,
-                    Estado: player.status === 'green' ? 'Óptimo' : player.status === 'amber' ? 'Precaución' : 'Alerta',
-                    Comentario: player.comment || '',
-                    'Fase Menstrual': player.menstrual ? menstrualPhases.find(p => p.phase === player.menstrual)?.label : 'N/A'
-                }));
-                
-                const csv = [
-                    Object.keys(data[0]).join(','),
-                    ...data.map(row => Object.values(row).map(val => `"${val}"`).join(','))
-                ].join('\n');
-                
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `CBA_${selectedTeam.name}_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            };
+    // Actualiza jugadores y visibilidad de fase menstrual
+    selEquipo.addEventListener('change', () => {
+      const team = selEquipo.value;
+      // Fase menstrual solo si el equipo es femenino (data-cat="F")
+      const isFemale = selEquipo.selectedOptions[0]?.dataset.cat === 'F';
+      menBox.style.display = isFemale ? 'block' : 'none';
 
-            const applyDateFilter = () => {
-                if (dateRange.start && dateRange.end) {
-                    alert(`Filtro aplicado: ${dateRange.start} a ${dateRange.end}`);
-                    setFilteredData(chartData);
-                } else {
-                    alert('Selecciona ambas fechas para aplicar el filtro');
-                }
-            };
+      selJugador.innerHTML = '<option value="">Selecciona tu nombre…</option>';
+      (roster[team] || []).forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n; opt.textContent = n;
+        selJugador.appendChild(opt);
+      });
+    });
 
-            // LOGIN SCREEN
-            if (!isAuthenticated) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-                        <div className="card w-full max-w-md">
-                            <div className="card-header text-center">
-                                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-white text-2xl">📊</span>
-                                </div>
-                                <h1 className="card-title text-2xl">Gestión de la Carga CBA</h1>
-                                <p className="text-sm text-gray-600">Estrella Armada PhD</p>
-                            </div>
-                            <div className="card-content space-y-4">
-                                <div className="space-y-3">
-                                    <p className="text-sm font-medium text-gray-700">Selecciona tu perfil:</p>
-                                    <div className="space-y-2">
-                                        <button
-                                            onClick={() => setUserType('athlete')}
-                                            className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                                userType === 'athlete' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xl">👤</span>
-                                                <div>
-                                                    <p className="font-medium">Jugador/a</p>
-                                                    <p className="text-xs text-gray-500">Acceso a cuestionarios wellness y RPE</p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={() => setUserType('coach')}
-                                            className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                                userType === 'coach' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xl">🔒</span>
-                                                <div>
-                                                    <p className="font-medium">Preparador/a Físico/a</p>
-                                                    <p className="text-xs text-gray-500">Dashboard completo y gestión de datos</p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                                {userType === 'coach' && (
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Clave de acceso:</label>
-                                        <input
-                                            type="password"
-                                            placeholder="Introduce la clave"
-                                            className="input"
-                                            value={authKey}
-                                            onChange={(e) => setAuthKey(e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                <button
-                                    className="button w-full"
-                                    onClick={handleAuth}
-                                    disabled={!userType || (userType === 'coach' && !authKey)}
-                                >
-                                    Acceder
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
+    // Sincroniza campos comunes a ambos formularios
+    function syncCommon() {
+      document.getElementById('w_equipo').value = selEquipo.value || '';
+      document.getElementById('w_nombre').value = selJugador.value || '';
+      document.getElementById('w_fecha').value  = inpFecha.value || '';
+      document.getElementById('r_equipo').value = selEquipo.value || '';
+      document.getElementById('r_nombre').value = selJugador.value || '';
+      document.getElementById('r_fecha').value  = inpFecha.value || '';
+    }
+    ['change','input'].forEach(ev=>{
+      selEquipo.addEventListener(ev, syncCommon);
+      selJugador.addEventListener(ev, syncCommon);
+      inpFecha.addEventListener(ev, syncCommon);
+    });
+    // Fecha por defecto hoy
+    inpFecha.valueAsDate = new Date(); syncCommon();
 
-            // COACH DASHBOARD
-            if (userType === 'coach' && currentView === 'dashboard') {
-                return (
-                    <div className="min-h-screen bg-gray-50">
-                        <div className="bg-white border-b px-4 py-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-xl font-bold">Gestión de la Carga CBA</h1>
-                                    <p className="text-sm text-gray-600">Estrella Armada PhD - Dashboard del Preparador</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={downloadExcel} className="button-outline text-sm">
-                                        📊 Descargar Excel
-                                    </button>
-                                    <button onClick={() => setShowDateFilter(!showDateFilter)} className="button-outline text-sm">
-                                        🔍 Filtrar Fechas
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            {showDateFilter && (
-                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                                    <div className="flex gap-4 items-end">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha inicio:</label>
-                                            <input
-                                                type="date"
-                                                className="input"
-                                                value={dateRange.start}
-                                                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha fin:</label>
-                                            <input
-                                                type="date"
-                                                className="input"
-                                                value={dateRange.end}
-                                                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                            />
-                                        </div>
-                                        <button onClick={applyDateFilter} className="button">Aplicar Filtro</button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-4 bg-gray-50 border-b">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Equipo seleccionado:</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {teams.map((team) => (
-                                    <button
-                                        key={team.id}
-                                        onClick={() => setSelectedTeam(team)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                            selectedTeam.id === team.id ? 'text-white' : 'bg-white text-gray-700 border'
-                                        }`}
-                                        style={selectedTeam.id === team.id ? { backgroundColor: team.color } : {}}
-                                    >
-                                        {team.name} - {team.category}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="p-4 space-y-6">
-                            <div className="card">
-                                <div className="card-header">
-                                    <h2 className="card-title">Tendencia de Carga Semanal - {selectedTeam.name}</h2>
-                                </div>
-                                <div className="card-content">
-                                    <ResponsiveContainer width="100%" height={350}>
-                                        <LineChart data={filteredData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="date" />
-                                            <YAxis domain={[0, 100]} />
-                                            <Tooltip />
-                                            <Line type="monotone" dataKey="rpe" stroke="#3b82f6" strokeWidth={2} />
-                                            <Line type="monotone" dataKey="wellness" stroke="#10b981" strokeWidth={2} />
-                                            <Line type="monotone" dataKey="maxPercentage" stroke="#f59e0b" strokeWidth={3} strokeDasharray="8 8" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            <div className="card">
-                                <div className="card-header">
-                                    <h2 className="card-title">Resumen de Jugadores - {selectedTeam.name}</h2>
-                                </div>
-                                <div className="card-content">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {playerStats.filter(player => players[selectedTeam.name]?.includes(player.name)).map((player) => (
-                                            <div 
-                                                key={player.name} 
-                                                className="p-3 rounded-lg border-2 bg-white cursor-pointer hover:shadow-md transition-all hover:border-blue-300"
-                                                onClick={() => {
-                                                    setSelectedIndividualPlayer(player.name);
-                                                    setShowIndividualReport(true);
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="font-medium text-sm">{player.name}</h4>
-                                                    <span className={`badge text-xs ${
-                                                        player.status === 'green' ? 'bg-green-100 text-green-800' :
-                                                        player.status === 'amber' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {player.status === 'green' ? 'Óptimo' : player.status === 'amber' ? 'Precaución' : 'Alerta'}
-                                                    </span>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                                    <div>
-                                                        <p className="text-gray-500">Wellness</p>
-                                                        <p className="font-medium">{player.wellness}/10</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-gray-500">RPE</p>
-                                                        <p className="font-medium">{player.rpe}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-gray-500">ACWR</p>
-                                                        <p className="font-medium">{player.acwr}</p>
-                                                    </div>
-                                                </div>
-                                                {player.comment && (
-                                                    <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                                                        <p className="text-blue-800">"{player.comment}"</p>
-                                                    </div>
-                                                )}
-                                                {selectedTeam.category === 'Femenino' && player.menstrual && (
-                                                    <div className="mt-2 flex items-center gap-1 text-xs">
-                                                        <div
-                                                            className="w-3 h-3 rounded-full"
-                                                            style={{ backgroundColor: menstrualPhases.find(p => p.phase === player.menstrual)?.color }}
-                                                        />
-                                                        <span className="text-gray-600">
-                                                            {menstrualPhases.find(p => p.phase === player.menstrual)?.label}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <p className="text-xs text-gray-500 mt-2">Click para ver informe individual</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {selectedTeam.category === 'Femenino' && (
-                                <div className="card">
-                                    <div className="card-header">
-                                        <h2 className="card-title">Fases del Ciclo Menstrual - {selectedTeam.name}</h2>
-                                    </div>
-                                    <div className="card-content">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {menstrualPhases.map((cycle) => {
-                                                const playersInPhase = playerStats.filter(player =>
-                                                    players[selectedTeam.name]?.includes(player.name) && player.menstrual === cycle.phase
-                                                );
-                                                return (
-                                                    <div key={cycle.phase} className="p-4 rounded-lg border" style={{ borderColor: cycle.color }}>
-                                                        <div className="flex items-center gap-2 mb-3">
-                                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: cycle.color }} />
-                                                            <h4 className="font-medium">{cycle.label}</h4>
-                                                            <span className="badge bg-gray-100 text-gray-800">{playersInPhase.length}</span>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            {playersInPhase.length > 0 ? (
-                                                                playersInPhase.map(player => (
-                                                                    <div key={player.name} className="text-sm text-gray-700">
-                                                                        {player.name}
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <p className="text-sm text-gray-500 italic">Ninguna jugadora en esta fase</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* MODAL INFORME INDIVIDUAL */}
-                        {showIndividualReport && selectedIndividualPlayer && (
-                            <div 
-                                className="fixed inset-0 bg-black bg-opacity-50 z-50 p-4"
-                                onClick={() => setShowIndividualReport(false)}
-                            >
-                                <div 
-                                    className="bg-white rounded-lg w-full max-w-4xl mx-auto my-8 shadow-xl"
-                                    onClick={(e) => e.stopPropagation()}
-                                    style={{ maxHeight: 'calc(100vh - 4rem)' }}
-                                >
-                                    <div className="flex justify-between items-center p-4 border-b bg-white rounded-t-lg">
-                                        <h2 className="text-xl font-bold">Informe Individual - {selectedIndividualPlayer}</h2>
-                                        <button
-                                            onClick={() => setShowIndividualReport(false)}
-                                            className="button-outline"
-                                        >
-                                            Cerrar
-                                        </button>
-                                    </div>
-                                    
-                                    <div 
-                                        className="p-4 overflow-y-auto"
-                                        style={{ maxHeight: 'calc(100vh - 8rem)' }}
-                                    >
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                            <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                                <p className="text-2xl font-bold text-blue-600">7.8/10</p>
-                                                <p className="text-sm text-gray-600">Wellness Promedio</p>
-                                            </div>
-                                            <div className="text-center p-4 bg-green-50 rounded-lg">
-                                                <p className="text-2xl font-bold text-green-600">7.2</p>
-                                                <p className="text-sm text-gray-600">RPE Promedio</p>
-                                            </div>
-                                            <div className="text-center p-4 bg-purple-50 rounded-lg">
-                                                <p className="text-2xl font-bold text-purple-600">1.1</p>
-                                                <p className="text-sm text-gray-600">ACWR</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="mb-6">
-                                            <h3 className="text-lg font-semibold mb-3">Evolución Temporal</h3>
-                                            <div className="bg-white border rounded-lg p-4" style={{ height: '300px' }}>
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={filteredData}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="date" />
-                                                        <YAxis />
-                                                        <Tooltip />
-                                                        <Line type="monotone" dataKey="wellness" stroke="#10b981" strokeWidth={2} />
-                                                        <Line type="monotone" dataKey="rpe" stroke="#3b82f6" strokeWidth={2} />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="p-4 bg-gray-50 rounded-lg">
-                                                <h4 className="font-semibold mb-3">Datos Actuales</h4>
-                                                {(() => {
-                                                    const playerData = playerStats.find(p => p.name === selectedIndividualPlayer);
-                                                    return playerData ? (
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-center">
-                                                                <span>Wellness:</span>
-                                                                <span className="font-bold">{playerData.wellness}/10</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center">
-                                                                <span>RPE:</span>
-                                                                <span className="font-bold">{playerData.rpe}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center">
-                                                                <span>ACWR:</span>
-                                                                <span className="font-bold">{playerData.acwr}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center">
-                                                                <span>Estado:</span>
-                                                                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                                    playerData.status === 'green' ? 'bg-green-100 text-green-800' :
-                                                                    playerData.status === 'amber' ? 'bg-yellow-100 text-yellow-800' :
-                                                                    'bg-red-100 text-red-800'
-                                                                }`}>
-                                                                    {playerData.status === 'green' ? 'Óptimo' : 
-                                                                     playerData.status === 'amber' ? 'Precaución' : 'Alerta'}
-                                                                </span>
-                                                            </div>
-                                                            {playerData.comment && (
-                                                                <div className="mt-4 p-3 bg-blue-50 rounded">
-                                                                    <p className="text-sm"><strong>Comentario:</strong> "{playerData.comment}"</p>
-                                                                </div>
-                                                            )}
-                                                            {playerData.menstrual && (
-                                                                <div className="mt-4 flex items-center gap-2">
-                                                                    <span className="text-sm font-medium">Fase menstrual:</span>
-                                                                    <div className="flex items-center gap-1">
-                                                                        <div
-                                                                            className="w-3 h-3 rounded-full"
-                                                                            style={{ backgroundColor: menstrualPhases.find(p => p.phase === playerData.menstrual)?.color }}
-                                                                        />
-                                                                        <span className="text-sm">
-                                                                            {menstrualPhases.find(p => p.phase === playerData.menstrual)?.label}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-gray-500">No se encontraron datos.</p>
-                                                    );
-                                                })()}
-                                            </div>
-                                            
-                                            <div className="p-4 bg-gray-50 rounded-lg">
-                                                <h4 className="font-semibold mb-3">Recomendaciones</h4>
-                                                <ul className="space-y-2 text-sm">
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-blue-500">•</span>
-                                                        <span>Monitorear tendencias de carga semanal</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-green-500">•</span>
-                                                        <span>Evaluar calidad de recuperación</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-orange-500">•</span>
-                                                        <span>Ajustar intensidad según ACWR</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-purple-500">•</span>
-                                                        <span>Considerar feedback subjetivo</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-red-500">•</span>
-                                                        <span>Revisar patrones de sueño y estrés</span>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                                            <h4 className="font-semibold text-blue-800 mb-2">Resumen</h4>
-                                            <p className="text-sm text-blue-700">
-                                                Jugador en seguimiento continuo. Las métricas actuales indican un estado 
-                                                {(() => {
-                                                    const playerData = playerStats.find(p => p.name === selectedIndividualPlayer);
-                                                    return playerData?.status === 'green' ? ' óptimo' : 
-                                                           playerData?.status === 'amber' ? ' de precaución' : ' que requiere atención';
-                                                })()}
-                                                . Continuar con el protocolo de monitorización establecido.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-
-            // ATHLETE MENU
-            if (userType === 'athlete' && currentView === 'athlete') {
-                return (
-                    <div className="min-h-screen bg-gray-50">
-                        <div className="bg-white border-b px-4 py-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-xl font-bold">Gestión de la Carga CBA</h1>
-                                    <p className="text-sm text-gray-600">Estrella Armada PhD</p>
-                                </div>
-                                <span className="badge bg-gray-100 text-gray-800">Jugador/a</span>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-gray-50 border-b space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Selecciona tu equipo:</label>
-                                <div className="flex gap-2 flex-wrap">
-                                    {teams.map((team) => (
-                                        <button
-                                            key={team.id}
-                                            onClick={() => setSelectedTeam(team)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                selectedTeam.id === team.id ? 'text-white' : 'bg-white text-gray-700 border'
-                                            }`}
-                                            style={selectedTeam.id === team.id ? { backgroundColor: team.color } : {}}
-                                        >
-                                            {team.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Selecciona tu nombre:</label>
-                                <select
-                                    className="input"
-                                    value={selectedPlayer}
-                                    onChange={(e) => setSelectedPlayer(e.target.value)}
-                                >
-                                    <option value="">-- Selecciona tu nombre --</option>
-                                    {players[selectedTeam.name]?.map((player) => (
-                                        <option key={player} value={player}>{player}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="p-4 space-y-4">
-                            <div className="card">
-                                <div className="card-header">
-                                    <h2 className="card-title">¿Qué quieres hacer?</h2>
-                                </div>
-                                <div className="card-content space-y-3">
-                                    <button
-                                        className="w-full p-4 border rounded-lg text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                        onClick={() => setCurrentView('wellness')}
-                                        disabled={!selectedPlayer}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">♥</div>
-                                            <div>
-                                                <p className="font-medium">Cuestionario Wellness</p>
-                                                <p className="text-sm text-gray-500">Por la mañana - Estado de bienestar</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                    <button
-                                        className="w-full p-4 border rounded-lg text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                        onClick={() => setCurrentView('rpe')}
-                                        disabled={!selectedPlayer}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="h-6 w-6 text-blue-500 text-xl">📊</span>
-                                            <div>
-                                                <p className="font-medium">Valoración RPE</p>
-                                                <p className="text-sm text-gray-500">Después del entrenamiento/partido</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            // WELLNESS FORM
-            if (currentView === 'wellness') {
-                const wellnessScore = calculateWellness(wellnessForm);
-                const isFemaleTeam = selectedTeam.category === 'Femenino';
-                
-                return (
-                    <div className="min-h-screen bg-gray-50">
-                        <div className="bg-white border-b px-4 py-3">
-                            <div className="flex items-center gap-3">
-                                <button className="button-outline" onClick={() => setCurrentView('athlete')}>← Volver</button>
-                                <div>
-                                    <h1 className="text-lg font-bold">Cuestionario Wellness</h1>
-                                    <p className="text-sm text-gray-600">{selectedPlayer} - {selectedTeam.name}</p>
-                                </div>
-                                <span className={`badge ${wellnessScore >= 7 ? 'bg-green-100 text-green-800' : wellnessScore >= 5 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                                    Score: {wellnessScore}/10
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div className="p-4 max-w-2xl mx-auto space-y-4">
-                            {[
-                                { key: 'sleep', label: 'Calidad del sueño' },
-                                { key: 'fatigue', label: 'Fatiga general' },
-                                { key: 'stress', label: 'Nivel de estrés' },
-                                { key: 'mood', label: 'Estado de ánimo' },
-                                { key: 'doms', label: 'Dolor muscular' }
-                            ].map((item) => (
-                                <div key={item.key} className="card">
-                                    <div className="card-content">
-                                        <label className="block font-medium mb-3">{item.label}</label>
-                                        <div className="flex gap-2">
-                                            {[1, 2, 3, 4, 5].map((value) => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => setWellnessForm(prev => ({ ...prev, [item.key]: value }))}
-                                                    className={`flex-1 h-12 rounded-lg border-2 font-semibold transition-colors ${
-                                                        wellnessForm[item.key] === value
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    {value}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {isFemaleTeam && (
-                                <div className="card">
-                                    <div className="card-content">
-                                        <label className="block font-medium mb-3">Fase del ciclo menstrual</label>
-                                        
-                                        <div className="mb-6 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg">
-                                            <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Ciclo Menstrual (28 días)</h4>
-                                            <div className="relative">
-                                                <div className="w-full h-8 bg-gray-100 rounded-full relative overflow-hidden">
-                                                    {menstrualPhases.map((phase) => {
-                                                        const width = ((phase.end - phase.start + 1) / 28) * 100;
-                                                        const left = ((phase.start - 1) / 28) * 100;
-                                                        return (
-                                                            <div
-                                                                key={phase.phase}
-                                                                className={`absolute h-full transition-all duration-300 ${
-                                                                    wellnessForm.menstrual === phase.phase ? 'ring-2 ring-blue-400 ring-offset-1' : ''
-                                                                }`}
-                                                                style={{
-                                                                    backgroundColor: phase.color,
-                                                                    width: `${width}%`,
-                                                                    left: `${left}%`,
-                                                                    opacity: wellnessForm.menstrual === phase.phase ? 1 : 0.8
-                                                                }}
-                                                            />
-                                                        );
-                                                    })}
-                                                </div>
-                                                
-                                                <div className="flex justify-between mt-1 text-xs text-gray-500">
-                                                    <span>Día 1</span>
-                                                    <span>Día 7</span>
-                                                    <span>Día 14</span>
-                                                    <span>Día 21</span>
-                                                    <span>Día 28</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-2 gap-2 mt-4">
-                                                {menstrualPhases.map((phase) => (
-                                                    <div key={phase.phase} className="flex items-center gap-2 text-xs">
-                                                        <div
-                                                            className="w-3 h-3 rounded-full"
-                                                            style={{ backgroundColor: phase.color }}
-                                                        />
-                                                        <span className="text-gray-700">
-                                                            {phase.label} ({phase.days})
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            {menstrualPhases.map((cycle) => (
-                                                <button
-                                                    key={cycle.phase}
-                                                    onClick={() => setWellnessForm(prev => ({ ...prev, menstrual: cycle.phase }))}
-                                                    className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                                                        wellnessForm.menstrual === cycle.phase
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div 
-                                                            className="w-4 h-4 rounded-full ring-1 ring-white"
-                                                            style={{ backgroundColor: cycle.color }}
-                                                        />
-                                                        <div>
-                                                            <p className="font-medium">{cycle.label}</p>
-                                                            <p className="text-xs text-gray-500">Días {cycle.days}</p>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="card">
-                                <div className="card-content">
-                                    <label className="block font-medium mb-3">Comentarios adicionales</label>
-                                    <textarea
-                                        rows={3}
-                                        className="textarea"
-                                        placeholder="¿Hay algo más que quieras comentar sobre cómo te sientes?"
-                                        value={wellnessForm.comment}
-                                        onChange={(e) => setWellnessForm(prev => ({ ...prev, comment: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                className="button w-full"
-                                onClick={saveWellnessData}
-                            >
-                                Guardar Cuestionario Wellness
-                            </button>
-                        </div>
-                    </div>
-                );
-            }
-
-            // RPE FORM
-            if (currentView === 'rpe') {
-                return (
-                    <div className="min-h-screen bg-gray-50">
-                        <div className="bg-white border-b px-4 py-3">
-                            <div className="flex items-center gap-3">
-                                <button className="button-outline" onClick={() => setCurrentView('athlete')}>← Volver</button>
-                                <div>
-                                    <h1 className="text-lg font-bold">Valoración RPE</h1>
-                                    <p className="text-sm text-gray-600">{selectedPlayer} - {selectedTeam.name}</p>
-                                </div>
-                                <span className="badge bg-gray-100 text-gray-800">RPE: {rpeForm.rpe}/10</span>
-                            </div>
-                        </div>
-                        <div className="p-4 max-w-2xl mx-auto space-y-4">
-                            <div className="card">
-                                <div className="card-header">
-                                    <h2 className="card-title">Escala de Percepción del Esfuerzo (RPE)</h2>
-                                </div>
-                                <div className="card-content">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { value: 1, label: 'Muy fácil', color: 'bg-green-100' },
-                                            { value: 2, label: 'Fácil', color: 'bg-green-100' },
-                                            { value: 3, label: 'Moderado', color: 'bg-yellow-100' },
-                                            { value: 4, label: 'Algo difícil', color: 'bg-yellow-100' },
-                                            { value: 5, label: 'Difícil', color: 'bg-orange-100' },
-                                            { value: 6, label: 'Más difícil', color: 'bg-orange-100' },
-                                            { value: 7, label: 'Muy difícil', color: 'bg-red-100' },
-                                            { value: 8, label: 'Extremo', color: 'bg-red-100' },
-                                            { value: 9, label: 'Máximo', color: 'bg-red-200' },
-                                            { value: 10, label: 'Súper máximo', color: 'bg-red-200' }
-                                        ].map((item) => (
-                                            <button
-                                                key={item.value}
-                                                onClick={() => setRpeForm(prev => ({ ...prev, rpe: item.value }))}
-                                                className={`p-3 rounded-lg border-2 transition-all text-left ${
-                                                    rpeForm.rpe === item.value
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : `${item.color} border-gray-200`
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-2xl font-bold">{item.value}</span>
-                                                    <p className="font-medium text-sm">{item.label}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="card">
-                                <div className="card-content">
-                                    <label className="block font-medium mb-3">Comentarios sobre la sesión</label>
-                                    <textarea
-                                        rows={3}
-                                        className="textarea"
-                                        placeholder="¿Cómo te has sentido durante la sesión? ¿Algo destacable?"
-                                        value={rpeForm.comment}
-                                        onChange={(e) => setRpeForm(prev => ({ ...prev, comment: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                className="button w-full"
-                                onClick={saveRPEData}
-                            >
-                                Guardar Valoración RPE
-                            </button>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                    <p className="text-lg text-gray-600">Selecciona un perfil para continuar</p>
-                </div>
-            );
+    // Bloquea envío si faltan equipo/jugador/fecha
+    function guard(elForm){
+      elForm.addEventListener('submit', (e) => {
+        syncCommon();
+        const falta = !selEquipo.value || !selJugador.value || !inpFecha.value;
+        if (falta) {
+          e.preventDefault();
+          alert('Selecciona equipo, jugador/a y fecha antes de enviar.');
         }
-
-        ReactDOM.render(<CBASystem />, document.getElementById('root'));
-    </script>
+      });
+    }
+    guard(document.getElementById('form-wellness'));
+    guard(document.getElementById('form-rpe'));
+  </script>
 </body>
 </html>
